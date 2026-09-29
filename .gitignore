@@ -1,0 +1,21 @@
+node_modules
+.next
+dist
+.turbo
+coverage
+*.log
+.env
+.env.*
+!.env.example
+spikes/out
+*.tsbuildinfo
+next-env.d.ts
+.pgdata
+
+# Keys and credentials must never be committed (the repo is public)
+*.pem
+*.key
+*.p12
+id_rsa*
+*.keystore
+service-account*.json

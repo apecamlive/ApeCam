@@ -1,0 +1,21 @@
+{
+  "name": "@apecam/spikes",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "s1:robinhood": "tsx src/s1-robinhood.ts",
+    "s2:dexscreener": "tsx src/s2-dexscreener.ts",
+    "s4:frames": "tsx src/s4-frames.ts",
+    "s5:solana": "tsx src/s5-solana.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "sharp": "^0.35.5",
+    "undici": "^7.30.0",
+    "viem": "^2.57.0"
+  },
+  "devDependencies": {
+    "tsx": "^4.23.15"
+  }
+}

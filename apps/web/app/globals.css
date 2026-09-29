@@ -1,0 +1,80 @@
+@import 'tailwindcss';
+
+/*
+ * APECAM design tokens, ported from the HTML prototype (styles.css):
+ * pitch-dark background with dot matrix, glass cards, royal-blue primary,
+ * emerald for "held / earned", red for LIVE.
+ */
+@theme {
+  --color-bg: #050508;
+  --color-bg-deep: #020204;
+  --color-card: rgb(13 14 21 / 0.75);
+  --color-card-solid: #0a0b12;
+  --color-card-hover: rgb(22 24 35 / 0.85);
+  --color-input: #101118;
+  --color-line: rgb(255 255 255 / 0.08);
+  --color-line-strong: rgb(255 255 255 / 0.18);
+
+  --color-primary: #1d4ed8;
+  --color-primary-hover: #2563eb;
+  --color-primary-light: #3b82f6;
+  --color-emerald: #10b981;
+  --color-emerald-light: #34d399;
+  --color-live: #ef4444;
+  --color-warning: #f59e0b;
+
+  --color-fg: #ffffff;
+  --color-fg-soft: #ededf5;
+  --color-muted: #94a3b8;
+  --color-subtle: #64748b;
+
+  --font-display: var(--font-outfit), system-ui, sans-serif;
+  --font-sans: var(--font-inter), system-ui, sans-serif;
+  --font-mono: var(--font-space-mono), ui-monospace, monospace;
+
+  --radius-card: 14px;
+  --radius-panel: 24px;
+}
+
+@layer base {
+  html {
+    color-scheme: dark;
+  }
+  body {
+    background-color: var(--color-bg);
+    background-image: radial-gradient(rgb(255 255 255 / 0.035) 1px, transparent 1px);
+    background-size: 32px 32px;
+    color: var(--color-fg);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+  }
+  :focus-visible {
+    outline: 2px solid var(--color-primary-light);
+    outline-offset: 2px;
+  }
+}
+
+@layer components {
+  .glass {
+    background: var(--color-card);
+    border: 1px solid var(--color-line);
+    backdrop-filter: blur(20px);
+  }
+  .tag {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--color-muted);
+  }
+}
+
+@keyframes live-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.35;
+  }
+}

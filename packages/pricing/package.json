@@ -1,0 +1,20 @@
+{
+  "name": "@apecam/pricing",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@apecam/shared": "workspace:*",
+    "decimal.js": "^10.6.0"
+  },
+  "devDependencies": {
+    "vitest": "^5.0.2"
+  }
+}

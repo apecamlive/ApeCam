@@ -1,0 +1,23 @@
+{
+  "name": "@apecam/chain",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run --dir src",
+    "test:live": "vitest run --dir tests/live"
+  },
+  "dependencies": {
+    "@apecam/shared": "workspace:*",
+    "bs58": "^6.0.0",
+    "viem": "^2.57.0"
+  },
+  "devDependencies": {
+    "undici": "^7.30.0",
+    "vitest": "^5.0.2"
+  }
+}

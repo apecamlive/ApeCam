@@ -1,0 +1,25 @@
+{
+  "name": "@apecam/worker",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsup",
+    "start": "node dist/index.js",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@apecam/core": "workspace:*",
+    "@apecam/shared": "workspace:*",
+    "bullmq": "^6.3.9",
+    "drizzle-orm": "^0.45.3",
+    "ioredis": "^5.8.0",
+    "pg": "^8.23.0"
+  },
+  "devDependencies": {
+    "@types/pg": "^8.23.1",
+    "tsup": "^8.5.0",
+    "tsx": "^4.23.15"
+  }
+}

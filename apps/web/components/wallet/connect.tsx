@@ -1,0 +1,112 @@
+'use client';
+
+import { shortAddress } from '@apecam/shared';
+import { useConnectModal } from '@rainbow-me/rainbowkit';
+import { useWallet } from '@solana/wallet-adapter-react';
+import { useWalletModal } from '@solana/wallet-adapter-react-ui';
+import { useEffect, useRef, useState } from 'react';
+import { useAccount, useDisconnect } from 'wagmi';
+import { useAuth } from '@/components/auth/auth-context';
+import { Button, Modal } from '@/components/ui';
+
+/** One entry point for both wallet families; the chain is detected by which wallet the user picks. */
+export function ConnectButton({ compact = false }: { compact?: boolean }) {
+  const { me, signedIn, signOut, loading } = useAuth();
+  const [open, setOpen] = useState(false);
+  const { disconnect } = useDisconnect();
+
+  if (loading)
+    return (
+      <Button size="sm" disabled>
+        …
+      </Button>
+    );
+  if (signedIn && me?.user) {
+    const w = me.wallets[0];
+    return (
+      <div className="flex items-center gap-2">
+        <span className="glass hidden rounded-full px-3 py-1.5 font-mono text-xs sm:inline">
+          {me.user.displayName ?? (w ? shortAddress(w.address) : 'signed in')}
+        </span>
+        <Button
+          size="sm"
+          variant="ghost"
+          onClick={async () => {
+            disconnect();
+            await signOut();
+          }}
+        >
+          Sign out
+        </Button>
+      </div>
+    );
+  }
+  return (
+    <>
+      <Button size="sm" variant="white" onClick={() => setOpen(true)}>
+        {compact ? 'Connect' : 'Connect Wallet'}
+      </Button>
+      <ConnectModal open={open} onClose={() => setOpen(false)} />
+    </>
+  );
+}
+
+function ConnectModal({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const { openConnectModal } = useConnectModal();
+  const { setVisible } = useWalletModal();
+  const solana = useWallet();
+  const { signedIn, signInSolana, solanaSigning, solanaError } = useAuth();
+  const { isConnected } = useAccount();
+  const asked = useRef<string | null>(null);
+
+  // After a Solana wallet connects, ask it to sign in once (the user can retry from the modal).
+  useEffect(() => {
+    const key = solana.publicKey?.toBase58();
+    if (!open || !solana.connected || !key || signedIn || asked.current === key) return;
+    asked.current = key;
+    void signInSolana();
+  }, [open, solana.connected, solana.publicKey, signedIn, signInSolana]);
+
+  useEffect(() => {
+    if (signedIn && open) onClose();
+  }, [signedIn, open, onClose]);
+
+  return (
+    <Modal open={open} onClose={onClose} title="Connect wallet">
+      <div className="flex flex-col gap-3">
+        <button
+          className="glass flex items-center justify-between rounded-card px-4 py-3 text-left hover:bg-card-hover"
+          onClick={() => {
+            if (solana.connected) void signInSolana();
+            else setVisible(true);
+          }}
+        >
+          <span>
+            <span className="block font-semibold">Solana</span>
+            <span className="text-xs text-muted">Phantom, Solflare, Backpack</span>
+          </span>
+          <span className="tag">{solana.connected ? 'sign in' : 'connect'}</span>
+        </button>
+        <button
+          className="glass flex items-center justify-between rounded-card px-4 py-3 text-left hover:bg-card-hover"
+          onClick={() => {
+            onClose();
+            openConnectModal?.();
+          }}
+        >
+          <span>
+            <span className="block font-semibold">EVM</span>
+            <span className="text-xs text-muted">Robinhood Chain, Base, BNB · MetaMask, Rabby, Coinbase</span>
+          </span>
+          <span className="tag">{isConnected ? 'sign in' : 'connect'}</span>
+        </button>
+        {solanaSigning && <p className="text-sm text-muted">Check your wallet to sign the message…</p>}
+        {solanaError && <p className="text-sm text-live">{solanaError}</p>}
+        <p className="text-xs text-subtle">
+          Signing in is a free message signature, not a transaction. APECAM will never ask for your seed
+          phrase or private key.
+        </p>
+      </div>
+    </Modal>
+  );
+}
