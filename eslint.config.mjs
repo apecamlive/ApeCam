@@ -15,7 +15,14 @@ export default tseslint.config(
   {
     // Plain Node scripts (.mjs) are not type-checked, so declare the Node globals they use.
     files: ['**/*.mjs'],
-    languageOptions: { globals: { console: 'readonly', process: 'readonly' } },
+    languageOptions: {
+      globals: { console: 'readonly', process: 'readonly', fetch: 'readonly', performance: 'readonly' },
+    },
+  },
+  {
+    // k6 load scripts run in k6's own runtime, which provides __ENV.
+    files: ['tests/load/k6-*.js'],
+    languageOptions: { globals: { __ENV: 'readonly' } },
   },
   ...tseslint.configs.recommended,
   {
@@ -29,6 +36,15 @@ export default tseslint.config(
         {
           selector: `Literal[value=${TX_RPC_METHODS}]`,
           message: 'APECAM must never sign or send transactions. Login is message-signing only.',
+        },
+        {
+          // Titles, chat, display names and token metadata are user-controlled: always render as text (S4-6).
+          selector: 'JSXAttribute[name.name="dangerouslySetInnerHTML"]',
+          message: 'dangerouslySetInnerHTML is banned: all rendered content is user-controlled.',
+        },
+        {
+          selector: 'Property[key.name="__html"]',
+          message: 'Raw HTML is banned: all rendered content is user-controlled.',
         },
       ],
       '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_', varsIgnorePattern: '^_' }],

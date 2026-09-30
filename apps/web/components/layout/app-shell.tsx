@@ -5,6 +5,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useState, type ReactNode } from 'react';
 import { cx } from '@/components/ui';
 import { ConnectButton } from '@/components/wallet/connect';
+import { usePublicConfig } from '@/lib/client/public-config';
 
 const NAV = [
   { href: '/', label: 'Live', icon: 'M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z' },
@@ -17,6 +18,13 @@ const NAV = [
   },
   { href: '/about', label: 'About', icon: 'M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20zM12 16v-4M12 8h.01' },
 ];
+
+const FOOTER = [
+  ['/rules', 'Content rules'],
+  ['/terms', 'Terms'],
+  ['/privacy', 'Privacy'],
+  ['/burn', 'Burn tracker'],
+] as const;
 
 function Icon({ d }: { d: string }) {
   return (
@@ -61,6 +69,7 @@ export function SearchBox({ className }: { className?: string }) {
 export function AppShell({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   const active = (href: string) => (href === '/' ? pathname === '/' : pathname.startsWith(href));
+  const config = usePublicConfig().data;
   return (
     <div className="min-h-screen md:pl-16">
       <aside className="fixed inset-y-0 left-0 z-30 hidden w-16 flex-col items-center gap-2 border-r border-line bg-[rgb(9_10_15/0.85)] py-4 backdrop-blur md:flex">
@@ -95,7 +104,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         <div className="ml-auto flex items-center gap-2 sm:ml-0">
           <Link
             href="/go-live"
-            className="hidden h-8 items-center rounded-full bg-live px-3 text-xs font-bold text-white hover:brightness-110 sm:inline-flex"
+            className="hidden h-8 items-center rounded-full bg-live-strong px-3 text-xs font-bold text-white hover:bg-live-strong-hover sm:inline-flex"
           >
             ● Go Live
           </Link>
@@ -103,7 +112,30 @@ export function AppShell({ children }: { children: ReactNode }) {
         </div>
       </header>
 
-      <main className="mx-auto w-full max-w-7xl px-4 pb-24 pt-4 md:pb-10">{children}</main>
+      {config && config.goLiveAccess !== 'open' && (
+        <p role="status" className="border-b border-warning/30 bg-warning/10 px-4 py-2 text-center text-xs">
+          {config.goLiveAccess === 'invite'
+            ? 'Closed beta: Go Live is open to invited streamers. Everyone can watch and chat.'
+            : 'Go Live is paused right now. Watching and chat still work.'}
+        </p>
+      )}
+
+      <main className="mx-auto w-full max-w-7xl px-4 pb-10 pt-4">{children}</main>
+
+      <footer className="mx-auto flex w-full max-w-7xl flex-wrap gap-x-4 gap-y-1 border-t border-line px-4 pb-24 pt-4 text-xs text-muted md:pb-6">
+        <span>APECAM · Hold it. Stream it.</span>
+        {FOOTER.map(([href, label]) => (
+          <Link key={href} href={href} className="hover:text-fg">
+            {label}
+          </Link>
+        ))}
+        {config?.feedbackUrl && (
+          <a href={config.feedbackUrl} target="_blank" rel="noopener noreferrer" className="hover:text-fg">
+            Beta feedback
+          </a>
+        )}
+        <span className="ml-auto">Not financial advice. 18+ to stream.</span>
+      </footer>
 
       <nav className="fixed inset-x-0 bottom-0 z-30 flex h-16 items-center justify-around border-t border-line bg-[rgb(9_10_15/0.95)] md:hidden">
         {NAV.slice(0, 4).map((n) => (

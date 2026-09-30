@@ -1,11 +1,12 @@
 'use client';
 
-import { useInfiniteQuery } from '@tanstack/react-query';
+import { formatCompact } from '@apecam/shared';
+import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
 import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
 import { StreamCard } from '@/components/stream/stream-card';
 import { Button, EmptyState, ErrorState, Skeleton, Tabs } from '@/components/ui';
-import { api, type FeedItem } from '@/lib/client/api';
+import { api, tokens18, type FeedItem, type TrackerSummary } from '@/lib/client/api';
 
 type Tab = 'live' | 'trending' | 'new';
 const TABS: { id: Tab; label: string }[] = [
@@ -16,6 +17,13 @@ const TABS: { id: Tab; label: string }[] = [
 
 export default function Home() {
   const [tab, setTab] = useState<Tab>('live');
+  // S3-11: same numbers as /burn; stays "coming soon" until the tracker is configured.
+  const tracker = useQuery({
+    queryKey: ['tracker-summary'],
+    queryFn: () => api<TrackerSummary>('/api/tracker/summary'),
+    retry: false,
+    staleTime: 60_000,
+  });
   const feed = useInfiniteQuery({
     queryKey: ['feed', tab],
     queryFn: ({ pageParam }) =>
@@ -64,7 +72,11 @@ export default function Home() {
         className="glass flex items-center justify-between rounded-card px-4 py-2 text-sm hover:bg-card-hover"
       >
         <span className="tag">$APECAM bought back / burned</span>
-        <span className="font-mono text-muted">— / — · tracker coming soon →</span>
+        <span className="font-mono text-muted">
+          {tracker.data
+            ? `${formatCompact(tokens18(tracker.data.boughtBackRaw), 1)} / ${formatCompact(tokens18(tracker.data.burnedRaw), 1)} (${tracker.data.burnedPercent.toFixed(2)}%) →`
+            : 'tracker coming soon →'}
+        </span>
       </Link>
 
       <Tabs tabs={TABS} value={tab} onChange={setTab} />

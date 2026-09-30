@@ -13,5 +13,5 @@ export const POST = route(
     });
     return handleLivekitEvent(deps, event);
   },
-  { skipOriginCheck: true },
+  { skipOriginCheck: true, rateLimit: false },
 );

@@ -1,10 +1,13 @@
 import { createChainAdapters } from '@apecam/chain';
 import { createDb } from '@apecam/db';
 import { PriceService } from '@apecam/pricing';
-import { R2SnapshotStore, r2ConfigFromEnv } from '@apecam/storage';
+import { R2Store, r2ConfigFromEnv } from '@apecam/storage';
 import { ApiError, type KeyValueStore } from '@apecam/shared';
+import { apecamConfigFromEnv } from './apecam-source';
 import { createConfigLoader } from './config';
 import { consoleLogger, type CoreDeps } from './deps';
+import { telegramNotifier } from './moderation';
+import { PrivyEmbeddedWallets } from './privy';
 import { LiveKitStreaming, type StreamingProvider } from './streaming';
 
 /** Used when LiveKit is not configured (local dev before accounts exist): everything else still works. */
@@ -53,14 +56,30 @@ export function coreDepsFromEnv(
 ): CoreDeps & { close: () => Promise<void> } {
   if (!env.DATABASE_URL) throw new Error('DATABASE_URL is required');
   const { db, pool } = createDb(env.DATABASE_URL);
-  const r2 = r2ConfigFromEnv(env);
+  const r2Config = r2ConfigFromEnv(env);
+  const r2 = r2Config ? new R2Store(r2Config) : undefined;
   return {
     db,
     chains: createChainAdapters(env),
     prices: new PriceService(kv),
     streaming: streamingFromEnv(env),
     kv,
-    snapshots: r2 ? new R2SnapshotStore(r2) : undefined,
+    snapshots: r2,
+    files: r2,
+    // Same R2 credentials, separate private bucket: the thumbnails bucket is public.
+    backups:
+      r2Config && env.R2_BACKUP_BUCKET
+        ? new R2Store({ ...r2Config, bucket: env.R2_BACKUP_BUCKET })
+        : undefined,
+    notifier:
+      env.ALERT_TELEGRAM_BOT_TOKEN && env.ALERT_TELEGRAM_CHAT_ID
+        ? telegramNotifier(env.ALERT_TELEGRAM_BOT_TOKEN, env.ALERT_TELEGRAM_CHAT_ID)
+        : undefined,
+    embeddedWallets:
+      env.PRIVY_APP_ID && env.PRIVY_APP_SECRET
+        ? new PrivyEmbeddedWallets(env.PRIVY_APP_ID, env.PRIVY_APP_SECRET)
+        : undefined,
+    apecam: apecamConfigFromEnv(env) ?? undefined,
     config: createConfigLoader(db),
     log: consoleLogger,
     close: () => pool.end(),

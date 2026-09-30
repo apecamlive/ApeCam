@@ -38,7 +38,12 @@ export async function call(
     rawBody?: string;
   } = {},
 ) {
-  const headers: Record<string, string> = { 'content-type': 'application/json', ...opts.headers };
+  // A fresh client IP per call keeps per-IP rate limits out of unrelated tests; rate-limit tests pin one.
+  const headers: Record<string, string> = {
+    'content-type': 'application/json',
+    'x-forwarded-for': `10.0.${Math.floor(Math.random() * 256)}.${Math.floor(Math.random() * 256)}`,
+    ...opts.headers,
+  };
   if (opts.origin !== null) headers.origin = opts.origin ?? ORIGIN;
   if (opts.cookie) headers.cookie = opts.cookie;
   const req = new Request(`${ORIGIN}/api/test`, {
@@ -51,7 +56,7 @@ export async function call(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const json = (await res.json()) as Record<string, any>;
   const setCookie = res.headers.get('set-cookie');
-  return { status: res.status, json, cookie: setCookie?.split(';')[0] };
+  return { status: res.status, json, cookie: setCookie?.split(';')[0], headers: res.headers };
 }
 
 export function evmSigner() {

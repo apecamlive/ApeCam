@@ -11,7 +11,7 @@ const VARIANTS: Record<Variant, string> = {
   white: 'bg-white text-black hover:bg-fg-soft',
   dark: 'glass text-fg hover:bg-card-hover',
   primary: 'bg-primary text-white hover:bg-primary-hover shadow-[0_0_30px_rgb(29_78_216/0.5)]',
-  danger: 'bg-live text-white hover:brightness-110',
+  danger: 'bg-live-strong text-white hover:bg-live-strong-hover',
   ghost: 'text-muted hover:text-fg',
 };
 
@@ -47,7 +47,7 @@ export function LiveBadge({ className }: { className?: string }) {
   return (
     <span
       className={cx(
-        'inline-flex items-center gap-1.5 rounded-md bg-live px-2 py-0.5 text-[11px] font-bold tracking-wider text-white',
+        'inline-flex items-center gap-1.5 rounded-md bg-live-strong px-2 py-0.5 text-[11px] font-bold tracking-wider text-white',
         className,
       )}
     >

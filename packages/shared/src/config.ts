@@ -2,8 +2,13 @@
  * Runtime-tunable settings, stored in the `app_config` table (Implementation Plan §5).
  * These defaults apply when a key is missing. Decisions: ✅ locked by owner, 🟡 plan default.
  */
+export const GO_LIVE_ACCESS = ['open', 'invite', 'closed'] as const;
+export type GoLiveAccess = (typeof GO_LIVE_ACCESS)[number];
+
 export const APP_CONFIG_DEFAULTS = {
   'go_live.min_usd': 100, // brief
+  /** open | invite (closed beta: invited wallets + staff) | closed (emergency button, L-7). Read uncached. */
+  'go_live.access': 'open' as GoLiveAccess,
   'go_live.min_liquidity_usd': 5000, // 🟡 D10
   'go_live.bonding_curve_min_mcap_usd': 10_000, // 🟡 D20 (ADR 002), pending owner
   'go_live.bonding_curve_min_volume24h_usd': 1000, // 🟡 D20 (ADR 002), pending owner
@@ -27,6 +32,8 @@ export const APP_CONFIG_DEFAULTS = {
   'mod.autoblur_window_sec': 300, // 🟡 D9
   'chat.max_len': 200,
   'chat.min_interval_ms': 2000,
+  /** Beta feedback form / Telegram link shown in the footer and Studio; empty hides it. */
+  'beta.feedback_url': '',
 };
 
 export type AppConfig = typeof APP_CONFIG_DEFAULTS;

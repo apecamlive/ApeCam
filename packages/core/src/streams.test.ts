@@ -24,6 +24,7 @@ async function liveStream(usd = 150) {
     title: 'gm apes',
     source: 'camera',
     rulesAccepted: true,
+    ageConfirmed: true,
   });
   await handleLivekitEvent(ctx.deps, {
     event: 'track_published',
@@ -47,6 +48,7 @@ describe('startStream', () => {
       title: 'gm',
       source: 'camera',
       rulesAccepted: true,
+      ageConfirmed: true,
     });
     expect(res.token).toBe(`pub-token:${res.room}:pub_${user.id}`);
     expect((await status(res.streamId)).status).toBe('starting');
@@ -68,8 +70,26 @@ describe('startStream', () => {
         title: 'gm',
         source: 'camera',
         rulesAccepted: false,
+        ageConfirmed: true,
       }),
     ).rejects.toMatchObject({ code: 'RULES_NOT_ACCEPTED' });
+  });
+
+  it('S4-11 · rejects when 18+ is not confirmed', async () => {
+    const { user, wallets } = await ctx.createUser();
+    ctx.fund(wallets[0]!.address, 150);
+    await expect(
+      startStream(ctx.deps, {
+        userId: user.id,
+        walletId: wallets[0]!.id,
+        chain: 'base',
+        contract: TEST_EVM_TOKEN,
+        title: 'gm',
+        source: 'camera',
+        rulesAccepted: true,
+        ageConfirmed: false,
+      }),
+    ).rejects.toMatchObject({ code: 'AGE_NOT_CONFIRMED' });
   });
 
   it('rejects an under-funded wallet with the eligibility details', async () => {
@@ -84,6 +104,7 @@ describe('startStream', () => {
         title: 'gm',
         source: 'camera',
         rulesAccepted: true,
+        ageConfirmed: true,
       }),
     ).rejects.toMatchObject({
       code: 'NOT_ELIGIBLE',
@@ -102,6 +123,7 @@ describe('startStream', () => {
         title: 'again',
         source: 'camera',
         rulesAccepted: true,
+        ageConfirmed: true,
       }),
     ).rejects.toMatchObject({ details: { reasons: ['WALLET_ALREADY_LIVE'] } });
   });
@@ -118,6 +140,7 @@ describe('startStream', () => {
         title: 'gm',
         source: 'camera',
         rulesAccepted: true,
+        ageConfirmed: true,
       });
     }
     expect(await ctx.db.select().from(streams).where(eq(streams.userId, user.id))).toHaveLength(2);
@@ -136,6 +159,7 @@ describe('startStream', () => {
         title: 'gm',
         source: 'camera',
         rulesAccepted: true,
+        ageConfirmed: true,
       }),
     ).rejects.toMatchObject({ code: 'STREAMING_UNAVAILABLE' });
     const [s] = await ctx.db.select().from(streams).where(eq(streams.userId, user.id));

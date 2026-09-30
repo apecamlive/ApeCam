@@ -1,0 +1,23 @@
+name: Smoke
+
+# Automated part of the smoke test (Sprint Tasks §J) against a deployed environment. Read-only.
+# Run it right after a production or staging deploy: Actions → Smoke → Run workflow.
+on:
+  workflow_dispatch:
+    inputs:
+      url:
+        description: Base URL, e.g. https://apecam.xyz
+        required: true
+        type: string
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+      - run: node tests/smoke/smoke.mjs "$URL"
+        env:
+          URL: ${{ inputs.url }}

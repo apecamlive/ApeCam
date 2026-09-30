@@ -1,5 +1,5 @@
 import { createServer } from 'node:http';
-import { coreDepsFromEnv } from '@apecam/core';
+import { coreDepsFromEnv, JOB_EXPECTED_GAP_MS, recordJobRun } from '@apecam/core';
 import { MemoryKeyValueStore, RedisKeyValueStore, runHealthChecks, type HealthCheck } from '@apecam/shared';
 import { Queue, Worker } from 'bullmq';
 import { sql } from 'drizzle-orm';
@@ -18,10 +18,22 @@ async function runJob(name: string) {
   const job = JOBS.find((j) => j.name === name);
   if (!job) throw new Error(`unknown job ${name}`);
   const started = performance.now();
-  const result = await job.run(deps);
-  deps.log?.info({ job: name, ms: Math.round(performance.now() - started), result }, 'job done');
-  return result;
+  const ms = () => Math.round(performance.now() - started);
+  try {
+    const result = await job.run(deps);
+    deps.log?.info({ job: name, ms: ms(), result }, 'job done');
+    await recordJobRun(deps, name, { ok: true, ms: ms() }).catch(() => undefined);
+    return result;
+  } catch (err) {
+    const error = err instanceof Error ? err.message : String(err);
+    await recordJobRun(deps, name, { ok: false, ms: ms(), error }).catch(() => undefined);
+    throw err;
+  }
 }
+
+// Every scheduled job must be known to the admin Health tab (and vice versa).
+const unknown = JOBS.map((j) => j.name).filter((n) => !(n in JOB_EXPECTED_GAP_MS));
+if (unknown.length) throw new Error(`jobs missing from JOB_EXPECTED_GAP_MS: ${unknown.join(', ')}`);
 
 let stop: () => Promise<void>;
 if (redis) {
@@ -30,7 +42,7 @@ if (redis) {
   for (const job of JOBS) {
     await queue.upsertJobScheduler(
       job.name,
-      { every: job.everyMs },
+      job.cron ? { pattern: job.cron, tz: 'UTC' } : { every: job.everyMs },
       { name: job.name, opts: { removeOnComplete: 100, removeOnFail: 500 } },
     );
   }
@@ -41,9 +53,9 @@ if (redis) {
     await queue.close();
   };
 } else {
-  // Local dev without Redis: plain timers, single process only.
-  deps.log?.warn({}, 'REDIS_URL not set: running jobs on local timers');
-  const timers = JOBS.map((job) =>
+  // Local dev without Redis: plain timers, single process only. Cron jobs (daily close) are run by hand.
+  deps.log?.warn({}, 'REDIS_URL not set: running interval jobs on local timers; cron jobs are skipped');
+  const timers = JOBS.filter((job) => job.everyMs).map((job) =>
     setInterval(
       () =>
         runJob(job.name).catch((err) => deps.log?.error({ job: job.name, err: String(err) }, 'job failed')),

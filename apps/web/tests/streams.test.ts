@@ -36,6 +36,7 @@ const startBody = (walletId: string) => ({
   title: 'gm apes',
   source: 'camera',
   rulesAccepted: true,
+  ageConfirmed: true,
 });
 
 describe('stream routes', () => {

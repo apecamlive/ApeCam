@@ -21,6 +21,13 @@ export interface ChainAdapter {
   isValidAddress(address: string): boolean;
   getBalance(wallet: string, contract: string): Promise<TokenHolding>;
   getTokenMeta(contract: string): Promise<TokenMeta>;
+  /** Every token with a non-zero balance (Studio "pick a token", S2-1). */
+  listHoldings(wallet: string): Promise<TokenHolding[]>;
+}
+
+/** The RPC behind this chain cannot enumerate a wallet's tokens (e.g. plain public EVM RPC). */
+export class HoldingsUnsupportedError extends Error {
+  readonly code = 'HOLDINGS_UNSUPPORTED';
 }
 
 /** Network/RPC failure, as opposed to a legitimate zero balance. Maps to RPC_UNAVAILABLE. */

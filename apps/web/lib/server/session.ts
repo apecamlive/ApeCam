@@ -1,4 +1,4 @@
-import type { KeyValueStore } from '@apecam/shared';
+import { kvKeys, type KeyValueStore } from '@apecam/shared';
 import {
   exportJWK,
   generateKeyPair,
@@ -68,6 +68,9 @@ export async function readSessionToken(
     const sid = payload.sid as string | undefined;
     if (!payload.sub || !sid) return null;
     if (await kv.get(revokedKey(sid))) return null;
+    // A ban invalidates every session issued before it (core `banWallet` writes this key).
+    const validAfter = await kv.get(kvKeys.sessionsValidAfter(payload.sub));
+    if (validAfter && (payload.iat ?? 0) * 1000 <= Number(validAfter)) return null;
     return { userId: payload.sub, sid, role: (payload.role as Session['role']) ?? 'user' };
   } catch {
     return null;

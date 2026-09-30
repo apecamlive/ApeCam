@@ -3,6 +3,7 @@ import { Inter, Outfit, Space_Mono } from 'next/font/google';
 import type { ReactNode } from 'react';
 import { AppShell } from '@/components/layout/app-shell';
 import { Providers } from '@/components/providers';
+import { siteOrigin } from '@/lib/site';
 import './globals.css';
 
 const outfit = Outfit({
@@ -14,8 +15,11 @@ const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
 const spaceMono = Space_Mono({ subsets: ['latin'], variable: '--font-space-mono', weight: ['400', '700'] });
 
 export const metadata: Metadata = {
+  metadataBase: new URL(siteOrigin()),
   title: { default: 'APECAM — Hold it. Stream it.', template: '%s · APECAM' },
   description: 'Decentralized tokenized livestream protocol. Hold a token, go live for it.',
+  openGraph: { siteName: 'APECAM', type: 'website' },
+  twitter: { card: 'summary_large_image' },
 };
 
 export const viewport: Viewport = { themeColor: '#050508' };

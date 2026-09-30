@@ -4,6 +4,7 @@ import { shortAddress } from '@apecam/shared';
 import { useConnectModal } from '@rainbow-me/rainbowkit';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { useWalletModal } from '@solana/wallet-adapter-react-ui';
+import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
 import { useAccount, useDisconnect } from 'wagmi';
 import { useAuth } from '@/components/auth/auth-context';
@@ -25,9 +26,20 @@ export function ConnectButton({ compact = false }: { compact?: boolean }) {
     const w = me.wallets[0];
     return (
       <div className="flex items-center gap-2">
-        <span className="glass hidden rounded-full px-3 py-1.5 font-mono text-xs sm:inline">
+        {(me.user.role === 'moderator' || me.user.role === 'admin') && (
+          <Link
+            href="/admin"
+            className="hidden rounded-full bg-live/20 px-3 py-1.5 text-xs font-semibold text-live sm:inline"
+          >
+            Mod
+          </Link>
+        )}
+        <Link
+          href={w ? `/u/${w.address}` : '/'}
+          className="glass hidden rounded-full px-3 py-1.5 font-mono text-xs hover:border-line-strong sm:inline"
+        >
           {me.user.displayName ?? (w ? shortAddress(w.address) : 'signed in')}
-        </span>
+        </Link>
         <Button
           size="sm"
           variant="ghost"

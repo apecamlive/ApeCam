@@ -1,6 +1,8 @@
+import { goLiveAccessFor, liveStreamsByWallet, updateDisplayName } from '@apecam/core';
 import { users, wallets } from '@apecam/db';
 import { eq } from 'drizzle-orm';
-import { getSession, route } from '@/lib/server/http';
+import { z } from 'zod';
+import { getSession, parseBody, requireSession, LIMITS, route } from '@/lib/server/http';
 
 export const dynamic = 'force-dynamic';
 
@@ -20,6 +22,8 @@ export const GET = route(async (req, _ctx, deps) => {
     })
     .from(wallets)
     .where(eq(wallets.userId, user.id));
+  const live = await liveStreamsByWallet(deps, user.id);
+  const access = await goLiveAccessFor(deps, user.id);
   return {
     user: {
       id: user.id,
@@ -28,6 +32,20 @@ export const GET = route(async (req, _ctx, deps) => {
       avatarUrl: user.avatarUrl,
       bannedUntil: user.bannedUntil,
     },
-    wallets: ws,
+    wallets: ws.map((w) => ({ ...w, liveStreamId: live.get(w.id) ?? null })),
+    // Studio shows this before the steps, so a beta-closed user is not led through a flow that will fail.
+    goLive: access.allowed
+      ? { mode: access.mode, allowed: true }
+      : { mode: access.mode, allowed: false, code: access.code, message: access.message },
   };
 });
+
+/** Profile edit (S2-6): display name. Avatars go through POST /api/me/avatar. */
+export const PATCH = route(
+  async (req, _ctx, deps) => {
+    const session = await requireSession(req, deps);
+    const body = await parseBody(req, z.object({ displayName: z.string().max(64).nullable() }));
+    return updateDisplayName(deps, session.userId, body.displayName);
+  },
+  { rateLimit: LIMITS.profile },
+);

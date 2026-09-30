@@ -32,10 +32,133 @@ export async function api<T>(path: string, init: { method?: string; body?: unkno
 }
 
 // Response shapes used by the UI.
-export interface MeResponse {
-  user: { id: string; role: string; displayName: string | null; avatarUrl: string | null } | null;
-  wallets: { id: string; family: 'evm' | 'solana'; address: string; isPayout: boolean; source: string }[];
+export interface MeWallet {
+  id: string;
+  family: 'evm' | 'solana';
+  address: string;
+  isPayout: boolean;
+  source: 'external' | 'embedded';
+  /** Set when this wallet is live right now (D15: one live stream per wallet). */
+  liveStreamId: string | null;
 }
+
+export interface MeResponse {
+  user: {
+    id: string;
+    role: 'user' | 'moderator' | 'admin';
+    displayName: string | null;
+    avatarUrl: string | null;
+  } | null;
+  wallets: MeWallet[];
+  /** Absent when signed out. */
+  goLive?: GoLiveAccessInfo;
+}
+
+export type GoLiveMode = 'open' | 'invite' | 'closed';
+export type GoLiveAccessInfo =
+  | { mode: GoLiveMode; allowed: true }
+  | { mode: GoLiveMode; allowed: false; code: 'GO_LIVE_CLOSED' | 'GO_LIVE_INVITE_ONLY'; message: string };
+
+export interface PublicConfig {
+  goLiveAccess: GoLiveMode;
+  feedbackUrl: string | null;
+}
+
+export interface WalletTokensResponse {
+  tokens: {
+    chain: string;
+    contract: string;
+    ticker: string | null;
+    name: string | null;
+    logoUrl: string | null;
+    usdValue: string | null;
+  }[];
+  unsupported: string[];
+}
+
+export interface StreamStatus {
+  status: 'starting' | 'live' | 'ended' | 'cut' | 'killed';
+  endReason: string | null;
+  viewers: number;
+  peakViewers: number;
+  startedAt: string | null;
+  blurred: boolean;
+  warningUntil: string | null;
+  lastCheck: { passed: boolean; usdValue: string; checkedAt: string } | null;
+  earn: {
+    validMinutesToday: number;
+    earnedTodayRaw: string;
+    nextTier: { minutes: number; total: number } | null;
+    lastMinute: { minuteAt: string; valid: boolean; viewers: number; failures: string[] } | null;
+  };
+}
+
+/** Why the last minute did not count toward Stream to Earn (Studio, S3-9). */
+export const MINUTE_FAILURES: Record<string, string> = {
+  holding: 'Holding re-check is missing or below $100',
+  viewers: 'Fewer than 3 signed-in viewers (accounts older than 24h)',
+  video: 'No live video detected in the last 2 minutes',
+  report: 'Open report under moderator review',
+  blurred: 'Stream is blurred for review',
+};
+
+export interface TrackerSummary {
+  boughtBackRaw: string;
+  boughtBackUsd: string;
+  burnedRaw: string;
+  burnedPercent: number;
+  totalSupplyRaw: string;
+  circulatingRaw: string;
+  treasuryRaw: string;
+  paidOutRaw: string;
+  lastBuybackAt: string | null;
+  lastBurnAt: string | null;
+  lastSyncedAt: string | null;
+  syncedToBlock: number | null;
+  burnIndexMatchesChain: boolean;
+  contract: string;
+  wallets: {
+    role: 'creatorFee' | 'operations' | 'buyback' | 'burn' | 'treasury';
+    address: string;
+    balanceRaw: string;
+  }[];
+}
+
+export interface BuybackRow {
+  txHash: string;
+  logIndex: number;
+  blockNumber: number;
+  apecamAmount: string;
+  spentAmount: string;
+  spentAsset: string;
+  usdValue: string | null;
+  avgPriceUsd: string | null;
+  boughtAt: string;
+}
+
+export interface BurnRow {
+  txHash: string;
+  logIndex: number;
+  blockNumber: number;
+  fromAddress: string;
+  amount: string;
+  usdValue: string | null;
+  burnedAt: string;
+}
+
+/** 18-decimal raw amount → number of whole tokens (display only; never for money math). */
+export const tokens18 = (raw: string | bigint) => Number(BigInt(raw) / 10n ** 12n) / 1e6;
+
+export const REPORT_CATEGORIES = [
+  { id: 'violence', label: 'Violence or threats' },
+  { id: 'sexual', label: 'Sexual content' },
+  { id: 'hate', label: 'Hate or harassment' },
+  { id: 'scam', label: 'Scam or impersonation' },
+  { id: 'self_harm', label: 'Self-harm' },
+  { id: 'illegal', label: 'Illegal activity' },
+  { id: 'spam', label: 'Spam' },
+  { id: 'other', label: 'Something else' },
+] as const;
 
 export interface FeedItem {
   streamId: string;

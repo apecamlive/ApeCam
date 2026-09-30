@@ -21,6 +21,9 @@
   --color-emerald: #10b981;
   --color-emerald-light: #34d399;
   --color-live: #ef4444;
+  /* Filled backgrounds with white text: #ef4444 is only 3.8:1 against white, this is 4.8:1 (WCAG AA). */
+  --color-live-strong: #dc2626;
+  --color-live-strong-hover: #b91c1c;
   --color-warning: #f59e0b;
 
   --color-fg: #ffffff;
