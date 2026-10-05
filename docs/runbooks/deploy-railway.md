@@ -4,19 +4,31 @@
 
 One Railway project, four services:
 
-| Service  | Source                     | Notes                                                                               |
-| -------- | -------------------------- | ----------------------------------------------------------------------------------- |
-| web      | `apps/web/railway.json`    | **2 replicas**. Runs migrations in `preDeployCommand`, health check `/api/health`   |
-| worker   | `apps/worker/railway.json` | One replica. BullMQ job schedulers are idempotent, so redeploys are safe            |
-| Postgres | Railway template           | Enable **volume backups** (daily) in the service settings; public TCP proxy **off** |
-| Redis    | Railway template           | Nonces, rate limits, caches, BullMQ, job health records. Turn on persistence (AOF)  |
+| Service  | Source                | Notes                                                                               |
+| -------- | --------------------- | ----------------------------------------------------------------------------------- |
+| web      | `.railway/railway.ts` | **2 replicas**. Runs migrations in `preDeployCommand`, health check `/api/health`   |
+| worker   | `.railway/railway.ts` | One replica. BullMQ job schedulers are idempotent, so redeploys are safe            |
+| Postgres | Railway template      | Enable **volume backups** (daily) in the service settings; public TCP proxy **off** |
+| Redis    | Railway template      | Nonces, rate limits, caches, BullMQ, job health records. Turn on persistence (AOF)  |
 
 Web replicas share all state through Postgres + Redis (sessions are stateless JWTs), so any number works.
 Without Redis every replica would keep its own rate-limit counters and nonces: production must have
 `REDIS_URL`.
 
-Set the root directory of web and worker to the repository root (the monorepo build needs every package), and
-point each service at its `railway.json` ("Config as code" path).
+Services, build/start commands, health checks and variable wiring are defined in `.railway/railway.ts`
+(Railway Infrastructure as Code; `railway.json` config-as-code is deprecated and stops working for legacy
+services on 2026-12-01). Both app services build from the **repository root**: the monorepo needs
+`pnpm-lock.yaml`, `pnpm-workspace.yaml` and `packages/*`, otherwise Railway falls back to `npm install` and fails
+on `workspace:*`.
+
+```bash
+railway login && railway link   # Railway CLI 5.42.1 or newer
+railway config plan             # review every "delete" before applying
+railway config apply
+```
+
+Secrets are not in the file (`preserve()` keeps the dashboard value): set them in Railway → Variables.
+Once apply has succeeded, delete `apps/web/railway.json` and `apps/worker/railway.json`.
 
 ## Environment
 

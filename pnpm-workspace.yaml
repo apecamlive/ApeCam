@@ -35,3 +35,9 @@ minimumReleaseAgeExclude:
 overrides:
   # GHSA memory-exhaustion DoS in ws < 8.21 (via viem/wagmi). Same major, drop-in (S4-7 audit).
   'ws@>=8.0.0 <8.21.0': ^8.21.0
+auditConfig:
+  ignoreGhsas:
+    # braces <= 3.0.3 stack-exhaustion DoS. No fixed release exists (3.0.3 is the latest on npm). Only reached via
+    # react-native > metro (React Native's bundler) pulled in by WalletConnect storage; metro never runs in the web
+    # app or server. Remove once braces ships a fix. Reviewed 2026-10-05.
+    - GHSA-vfj7-8cjw-p6xm
