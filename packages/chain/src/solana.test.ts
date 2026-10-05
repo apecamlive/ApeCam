@@ -109,3 +109,24 @@ describe('SolanaAdapter', () => {
     expect(adapter.isValidAddress('abc')).toBe(false);
   });
 });
+
+describe('SolanaAdapter.listHoldings', () => {
+  it('merges both token programs, sums per mint, drops zero balances', async () => {
+    const acct = (mint: string, amount: string, decimals = 6) => ({
+      account: { data: { parsed: { info: { mint, tokenAmount: { amount, decimals } } } } },
+    });
+    const fetchMock = vi.fn(async (_url: string, init: RequestInit) => {
+      const body = JSON.parse(init.body as string);
+      const legacy = body.params[1].programId.startsWith('Tokenkeg');
+      return rpcResponse({
+        value: legacy ? [acct('A', '5'), acct('Z', '0')] : [acct('A', '7'), acct('B', '1', 9)],
+      });
+    });
+    const adapter = new SolanaAdapter({ rpcUrls: ['https://rpc-a'], fetch: fetchMock as never });
+    const res = await adapter.listHoldings(OWNER);
+    expect(res).toEqual([
+      { contract: 'A', rawBalance: 12n, decimals: 6 },
+      { contract: 'B', rawBalance: 1n, decimals: 9 },
+    ]);
+  });
+});

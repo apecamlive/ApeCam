@@ -10,7 +10,7 @@ coverage
 spikes/out
 *.tsbuildinfo
 next-env.d.ts
-.pgdata
+.pgdata*
 
 # Keys and credentials must never be committed (the repo is public)
 *.pem
@@ -19,3 +19,8 @@ next-env.d.ts
 id_rsa*
 *.keystore
 service-account*.json
+
+# Playwright
+test-results/
+playwright-report/
+blob-report/

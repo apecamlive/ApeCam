@@ -32,3 +32,6 @@ minimumReleaseAgeExclude:
   - typescript-eslint@8.71.0
   - viem@2.57.0
   - '@aws-sdk/client-s3@3.1142.0'
+overrides:
+  # GHSA memory-exhaustion DoS in ws < 8.21 (via viem/wagmi). Same major, drop-in (S4-7 audit).
+  'ws@>=8.0.0 <8.21.0': ^8.21.0

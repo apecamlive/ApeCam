@@ -9,6 +9,16 @@ describe('MemoryKeyValueStore', () => {
     expect(await kv.getdel('n')).toBeNull();
   });
 
+  it('incr counts within a fixed window and resets after it', async () => {
+    let now = 0;
+    const kv = new MemoryKeyValueStore(() => now);
+    expect(await kv.incr('rl', 60)).toEqual({ count: 1, ttlSec: 60 });
+    now = 30_000;
+    expect(await kv.incr('rl', 60)).toEqual({ count: 2, ttlSec: 30 });
+    now = 60_000;
+    expect(await kv.incr('rl', 60)).toEqual({ count: 1, ttlSec: 60 });
+  });
+
   it('expires keys after their TTL', async () => {
     let now = 0;
     const kv = new MemoryKeyValueStore(() => now);

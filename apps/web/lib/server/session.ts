@@ -1,4 +1,4 @@
-import type { KeyValueStore } from '@apecam/shared';
+import { kvKeys, type KeyValueStore } from '@apecam/shared';
 import {
   exportJWK,
   generateKeyPair,
@@ -48,12 +48,16 @@ export async function loadSessionKeys(env: Record<string, string | undefined>): 
   return { kid, privateKey, publicKey, publicJwk };
 }
 
-export async function createSessionToken(keys: SessionKeys, session: Session) {
+/**
+ * `now` is the app clock (deps.now): the ban cut-off in readSessionToken is written with the same clock, so
+ * "issued before the ban" is always compared on one timeline. Expiry stays relative to real time.
+ */
+export async function createSessionToken(keys: SessionKeys, session: Session, now: Date = new Date()) {
   return new SignJWT({ sid: session.sid, role: session.role })
     .setProtectedHeader({ alg: 'ES256', kid: keys.kid })
     .setSubject(session.userId)
     .setIssuer(ISSUER)
-    .setIssuedAt()
+    .setIssuedAt(Math.floor(now.getTime() / 1000))
     .setExpirationTime(`${SESSION_TTL_SEC}s`)
     .sign(keys.privateKey);
 }
@@ -68,6 +72,9 @@ export async function readSessionToken(
     const sid = payload.sid as string | undefined;
     if (!payload.sub || !sid) return null;
     if (await kv.get(revokedKey(sid))) return null;
+    // A ban invalidates every session issued before it (core `banWallet` writes this key).
+    const validAfter = await kv.get(kvKeys.sessionsValidAfter(payload.sub));
+    if (validAfter && (payload.iat ?? 0) * 1000 <= Number(validAfter)) return null;
     return { userId: payload.sub, sid, role: (payload.role as Session['role']) ?? 'user' };
   } catch {
     return null;

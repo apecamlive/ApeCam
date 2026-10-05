@@ -9,6 +9,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { useAuth } from '@/components/auth/auth-context';
 import { ChatPanel, LiveChatFeed } from '@/components/chat/chat-panel';
 import { StreamVideo } from '@/components/stream/player';
+import { ReportButton } from '@/components/stream/report-button';
 import {
   Button,
   CopyButton,
@@ -31,9 +32,9 @@ export function TokenRoom({ chain, contract }: { chain: string; contract: string
     refetchInterval: 15_000,
   });
 
-  if (page.isLoading) return <Skeleton className="h-[480px]" />;
+  if (page.isPending) return <Skeleton className="h-[480px]" />;
   if (page.isError) {
-    const notFound = page.error instanceof ApiRequestError && page.error.status === 404;
+    const notFound = page.error instanceof ApiRequestError && [400, 404].includes(page.error.status);
     return (
       <ErrorState
         message={notFound ? 'Token not found on this chain.' : 'Could not load this token.'}
@@ -146,10 +147,12 @@ function useElapsed(startedAt: string | null) {
 }
 
 function StreamStage({ stream }: { stream: TokenPage['streams'][number] }) {
-  const { signedIn } = useAuth();
+  const { signedIn, me } = useAuth();
   const elapsed = useElapsed(stream.startedAt);
   const [live, setLive] = useState<ChatMessage[]>([]);
   const onMessage = useCallback((m: ChatMessage) => setLive((prev) => [...prev.slice(-199), m]), []);
+  const [deleted, setDeleted] = useState<Set<number>>(new Set());
+  const onDelete = useCallback((id: number) => setDeleted((prev) => new Set(prev).add(id)), []);
   // Token identity depends on the session (u_… vs a_…), so refetch it when the user signs in.
   const viewer = useQuery({
     queryKey: ['view-token', stream.id, signedIn],
@@ -158,20 +161,27 @@ function StreamStage({ stream }: { stream: TokenPage['streams'][number] }) {
         body: {},
       }),
     staleTime: 50 * 60_000,
+    // "Streaming not configured" will not fix itself in a few seconds: show it at once.
+    retry: (n, err) =>
+      n < 2 &&
+      !(err instanceof ApiRequestError && (err.status < 500 || err.code === 'STREAMING_UNAVAILABLE')),
   });
 
   return (
     <div className="grid gap-4 lg:grid-cols-[1fr_340px]">
       <div className="flex flex-col gap-3">
         {viewer.isError ? (
-          <ErrorState
-            message={
-              viewer.error instanceof ApiRequestError ? viewer.error.message : 'Could not join the stream.'
-            }
-            onRetry={() => viewer.refetch()}
-          />
+          <div className="relative flex aspect-video flex-col items-center justify-center gap-3 overflow-hidden rounded-[20px] border border-line text-center">
+            <span className="tag">Stream unavailable</span>
+            <p className="max-w-sm px-6 text-sm text-muted">
+              {viewer.error instanceof ApiRequestError ? viewer.error.message : 'Could not join the stream.'}
+            </p>
+            <Button size="sm" onClick={() => viewer.refetch()}>
+              Try again
+            </Button>
+          </div>
         ) : !viewer.data ? (
-          <Skeleton className="aspect-video" />
+          <Skeleton className="aspect-video rounded-[20px]" />
         ) : (
           <LiveKitRoom
             serverUrl={viewer.data.wsUrl}
@@ -190,7 +200,7 @@ function StreamStage({ stream }: { stream: TokenPage['streams'][number] }) {
                 </span>
               </div>
             </div>
-            <LiveChatFeed onMessage={onMessage} />
+            <LiveChatFeed onMessage={onMessage} onDelete={onDelete} />
           </LiveKitRoom>
         )}
         <div className="glass flex items-center gap-3 rounded-card p-3">
@@ -204,12 +214,10 @@ function StreamStage({ stream }: { stream: TokenPage['streams'][number] }) {
               $APECAM earned
             </p>
           </div>
-          <Button size="sm" variant="ghost" disabled title="Reporting arrives in Sprint 2">
-            Report
-          </Button>
+          <ReportButton streamId={stream.id} isOwn={me?.user?.id === stream.streamer.userId} />
         </div>
       </div>
-      <ChatPanel streamId={stream.id} live={live} className="lg:h-[calc(100vh-180px)]" />
+      <ChatPanel streamId={stream.id} live={live} deleted={deleted} className="lg:h-[calc(100vh-180px)]" />
     </div>
   );
 }

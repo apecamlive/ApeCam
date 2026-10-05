@@ -78,6 +78,32 @@ export class SolanaAdapter implements ChainAdapter {
     return { contract: mint, rawBalance, decimals };
   }
 
+  /** Non-zero balances across both token programs, summed per mint. Works on any Solana RPC. */
+  async listHoldings(owner: string): Promise<TokenHolding[]> {
+    const pages = await Promise.all(
+      [TOKEN_PROGRAM, TOKEN_2022_PROGRAM].map((programId) =>
+        this.rpc<{ value: ParsedTokenAccount[] }>('getTokenAccountsByOwner', [
+          owner,
+          { programId },
+          { encoding: 'jsonParsed', commitment: 'confirmed' },
+        ]),
+      ),
+    );
+    const byMint = new Map<string, TokenHolding>();
+    for (const acct of pages.flatMap((p) => p.value)) {
+      const { mint, tokenAmount } = acct.account.data.parsed.info;
+      const raw = BigInt(tokenAmount.amount);
+      if (raw === 0n) continue;
+      const prev = byMint.get(mint);
+      byMint.set(mint, {
+        contract: mint,
+        rawBalance: (prev?.rawBalance ?? 0n) + raw,
+        decimals: tokenAmount.decimals,
+      });
+    }
+    return [...byMint.values()];
+  }
+
   async getTokenMeta(mint: string): Promise<TokenMeta> {
     const res = await this.rpc<{ value: ParsedMint | null }>('getAccountInfo', [
       mint,

@@ -1,4 +1,5 @@
 import type { NextConfig } from 'next';
+import { securityHeaders } from './lib/security';
 
 const nextConfig: NextConfig = {
   // Workspace packages ship TypeScript source.
@@ -20,6 +21,14 @@ const nextConfig: NextConfig = {
     '@coinbase/cdp-sdk',
   ],
   poweredByHeader: false,
+  async headers() {
+    // Evaluated at build time: APP_ORIGIN must be set for the build (Railway exposes service variables to it).
+    const headers = securityHeaders({
+      dev: process.env.NODE_ENV !== 'production',
+      https: (process.env.APP_ORIGIN ?? '').startsWith('https://'),
+    });
+    return [{ source: '/:path*', headers }];
+  },
 };
 
 export default nextConfig;

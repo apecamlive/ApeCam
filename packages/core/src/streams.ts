@@ -3,6 +3,7 @@ import type { ChainId } from '@apecam/chain';
 import { holdingChecks, streams, users } from '@apecam/db';
 import { ApiError } from '@apecam/shared';
 import { eq } from 'drizzle-orm';
+import { assertCanGoLive } from './access';
 import type { CoreDeps } from './deps';
 import { checkEligibility } from './eligibility';
 import type { StreamSource } from './streaming';
@@ -33,11 +34,15 @@ export interface StartStreamInput {
   title: string;
   source: StreamSource;
   rulesAccepted: boolean;
+  /** 18+ confirmation (S4-11). */
+  ageConfirmed: boolean;
 }
 
 export async function startStream(deps: CoreDeps, input: StartStreamInput) {
   if (!input.rulesAccepted)
     throw new ApiError(400, 'RULES_NOT_ACCEPTED', 'Accept the content rules to go live');
+  if (!input.ageConfirmed) throw new ApiError(400, 'AGE_NOT_CONFIRMED', 'You must be 18 or older to go live');
+  await assertCanGoLive(deps, input.userId);
 
   // Never trust an earlier eligibility response from the client: check again right before going live.
   const check = await checkEligibility(deps, input);

@@ -6,7 +6,9 @@ export const metadata: Metadata = { title: 'Content rules' };
 export default function RulesPage() {
   return (
     <article className="mx-auto flex max-w-2xl flex-col gap-4">
-      <p className="tag">// draft — final text pending owner and legal review</p>
+      <p className="w-fit rounded-full border border-warning/30 bg-warning/10 px-3 py-1 text-xs text-fg-soft">
+        Draft, final text pending owner and legal review
+      </p>
       <h1 className="font-display text-3xl font-black">Content rules</h1>
       <section className="glass rounded-card p-5">
         <h2 className="mb-2 font-display text-lg font-semibold">Not allowed on APECAM</h2>

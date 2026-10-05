@@ -1,4 +1,4 @@
-import { ListObjectsV2Command, S3Client } from '@aws-sdk/client-s3';
+import { GetObjectCommand, ListObjectsV2Command, PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
 
 export interface R2Config {
   endpoint: string; // https://<account>.r2.cloudflarestorage.com
@@ -22,8 +22,8 @@ export function r2ConfigFromEnv(env: Record<string, string | undefined>): R2Conf
   };
 }
 
-/** Cloudflare R2 (S3-compatible) reader for stream snapshots written by LiveKit Egress. */
-export class R2SnapshotStore {
+/** Cloudflare R2 (S3-compatible): snapshot reader for LiveKit Egress output and public file uploads (avatars). */
+export class R2Store {
   private readonly s3: S3Client;
 
   constructor(private readonly cfg: R2Config) {
@@ -50,5 +50,24 @@ export class R2SnapshotStore {
       token = page.IsTruncated ? page.NextContinuationToken : undefined;
     } while (token);
     return last ? { key: last, url: this.publicUrl(last) } : null;
+  }
+
+  /** Uploads a public, immutable file (keys are unique per upload) and returns its public URL. */
+  async read(key: string): Promise<Uint8Array> {
+    const res = await this.s3.send(new GetObjectCommand({ Bucket: this.cfg.bucket, Key: key }));
+    return res.Body!.transformToByteArray();
+  }
+
+  async put(key: string, body: Uint8Array, contentType: string) {
+    await this.s3.send(
+      new PutObjectCommand({
+        Bucket: this.cfg.bucket,
+        Key: key,
+        Body: body,
+        ContentType: contentType,
+        CacheControl: 'public, max-age=31536000, immutable',
+      }),
+    );
+    return this.publicUrl(key);
   }
 }

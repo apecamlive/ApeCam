@@ -1,13 +1,11 @@
 import type { Metadata } from 'next';
-import { EmptyState } from '@/components/ui';
+import { BurnTracker } from './tracker';
 
-export const metadata: Metadata = { title: 'Burn & Buyback Tracker' };
+export const metadata: Metadata = {
+  title: 'Burn & Buyback Tracker',
+  description: 'Every $APECAM buyback and burn, read straight from Robinhood Chain.',
+};
 
 export default function BurnPage() {
-  return (
-    <EmptyState
-      title="Burn & Buyback Tracker"
-      body="On-chain buyback and burn tracking for $APECAM arrives in Sprint 3."
-    />
-  );
+  return <BurnTracker />;
 }

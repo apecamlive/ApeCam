@@ -12,6 +12,7 @@ import {
 import type { ChainId } from './registry';
 import {
   ChainRpcError,
+  HoldingsUnsupportedError,
   TokenNotFoundError,
   type ChainAdapter,
   type TokenHolding,
@@ -72,6 +73,50 @@ export class EvmAdapter implements ChainAdapter {
       this.client.readContract({ address, abi: erc20Abi, functionName: 'symbol' }).catch(() => undefined),
     ]);
     return { contract: contract.toLowerCase(), decimals, name, ticker };
+  }
+
+  /**
+   * Plain JSON-RPC cannot list a wallet's ERC-20s; this uses Alchemy's Token API, which covers
+   * Robinhood Chain, Base and BNB (ADR 001). Other RPCs → HoldingsUnsupportedError (Studio falls back to paste-CA).
+   */
+  async listHoldings(wallet: string): Promise<TokenHolding[]> {
+    let res: { tokenBalances: { contractAddress: string; tokenBalance: string | null }[] };
+    try {
+      res = await this.client.request({
+        method: 'alchemy_getTokenBalances' as never,
+        params: [wallet, 'erc20'] as never,
+      });
+    } catch (err) {
+      const e = err as { code?: number; walk?: (fn: (e: unknown) => boolean) => unknown };
+      const notFound = e.code === -32601 || !!e.walk?.((x) => (x as { code?: number }).code === -32601);
+      if (notFound) throw new HoldingsUnsupportedError(`${this.chain} RPC cannot list token balances`);
+      throw new ChainRpcError(`EVM RPC failed on ${this.chain}`, err);
+    }
+    const nonZero = res.tokenBalances
+      .filter((b) => b.tokenBalance && BigInt(b.tokenBalance) > 0n)
+      .slice(0, 100); // spam airdrops can be endless; 100 is plenty for a picker
+    const decimals = await Promise.all(
+      nonZero.map((b) =>
+        this.client
+          .readContract({
+            address: b.contractAddress.toLowerCase() as `0x${string}`,
+            abi: erc20Abi,
+            functionName: 'decimals',
+          })
+          .catch(() => null),
+      ),
+    );
+    return nonZero.flatMap((b, i) =>
+      decimals[i] === null
+        ? []
+        : [
+            {
+              contract: b.contractAddress.toLowerCase(),
+              rawBalance: BigInt(b.tokenBalance!),
+              decimals: decimals[i]!,
+            },
+          ],
+    );
   }
 
   private async call<T>(fn: () => Promise<T>): Promise<T> {

@@ -335,6 +335,19 @@ export const burns = pgTable(
   (t) => [primaryKey({ columns: [t.txHash, t.logIndex] })],
 );
 
+/**
+ * Closed beta (Sprint 5, risk R4): wallets allowed to go live while `go_live.access` is 'invite'. Keyed by
+ * address so streamers can be invited before they ever sign in. EVM addresses lowercase, Solana as-is.
+ */
+export const goLiveInvites = pgTable('go_live_invites', {
+  address: text('address').primaryKey(),
+  note: text('note'),
+  invitedBy: uuid('invited_by')
+    .notNull()
+    .references(() => users.id),
+  createdAt: ts('created_at').notNull().defaultNow(),
+});
+
 export const syncCursors = pgTable('sync_cursors', {
   name: text('name').primaryKey(),
   lastBlock: bigint('last_block', { mode: 'number' }).notNull(),

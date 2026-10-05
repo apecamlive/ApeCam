@@ -3,7 +3,9 @@ import { eq } from 'drizzle-orm';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { recentChat, sendChatMessage, validateChatBody } from './chat';
 import { getFeed, trendingScore } from './feed';
-import { refreshPrices, refreshThumbnails, sweepStreams } from './jobs';
+import sharp from 'sharp';
+import { frameCheck } from './frames';
+import { refreshPrices, sweepStreams } from './jobs';
 import { searchTokens } from './search';
 import { startStream } from './streams';
 import { createTestContext, quote, TEST_EVM_TOKEN } from './testing';
@@ -28,6 +30,7 @@ async function goLive(opts: { contract?: string; title?: string; usd?: number } 
     title: opts.title ?? 'gm',
     source: 'camera',
     rulesAccepted: true,
+    ageConfirmed: true,
   });
   await handleLivekitEvent(ctx.deps, {
     event: 'track_published',
@@ -273,6 +276,7 @@ describe('S1-4 / S1-6 · jobs', () => {
       title: 'gm',
       source: 'camera',
       rulesAccepted: true,
+      ageConfirmed: true,
     });
     await ctx.db.update(streams).set({ createdAt: ctx.deps.now!() }).where(eq(streams.id, s.streamId));
     ctx.advance(121_000);
@@ -296,11 +300,14 @@ describe('S1-4 / S1-6 · jobs', () => {
     expect(t).toMatchObject({ priceUsd: '3.21', marketCapUsd: '777' });
   });
 
-  it('refresh-thumbnails picks the newest snapshot', async () => {
+  it('frame-check makes the newest snapshot the thumbnail', async () => {
     const { streamId } = await goLive();
-    ctx.snapshots.objects.set(`thumbs/${streamId}/img_20261001T120000.jpeg`, 'https://cdn/old.jpeg');
-    ctx.snapshots.objects.set(`thumbs/${streamId}/img_20261001T120100.jpeg`, 'https://cdn/new.jpeg');
-    await refreshThumbnails(ctx.deps);
-    expect((await get(streamId)).thumbnailUrl).toBe('https://cdn/new.jpeg');
+    const img = await sharp({ create: { width: 320, height: 180, channels: 3, background: '#406080' } })
+      .jpeg()
+      .toBuffer();
+    ctx.snapshots.add(streamId, 'img_20261001T120000.jpeg', new Uint8Array(img));
+    const newest = ctx.snapshots.add(streamId, 'img_20261001T120100.jpeg', new Uint8Array(img));
+    await frameCheck(ctx.deps);
+    expect((await get(streamId)).thumbnailUrl).toBe(`https://cdn.test/${newest}`);
   });
 });

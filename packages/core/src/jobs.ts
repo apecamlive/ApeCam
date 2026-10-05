@@ -1,6 +1,6 @@
 import { CHAINS, type ChainId } from '@apecam/chain';
 import { streams, tokens } from '@apecam/db';
-import { and, desc, eq, gte, inArray, lt, or, sql } from 'drizzle-orm';
+import { and, desc, eq, gte, lt, or, sql } from 'drizzle-orm';
 import type { CoreDeps } from './deps';
 import { terminateStream } from './streams';
 import { quoteColumns } from './tokens';
@@ -75,22 +75,4 @@ export async function sweepStreams(deps: CoreDeps) {
     }
   }
   return summary;
-}
-
-/** refresh-thumbnails (every minute): newest Egress snapshot in R2 becomes the Home card thumbnail. */
-export async function refreshThumbnails(deps: CoreDeps) {
-  if (!deps.snapshots) return { skipped: 'no snapshot storage configured' };
-  const live = await deps.db
-    .select({ id: streams.id, thumbnailUrl: streams.thumbnailUrl })
-    .from(streams)
-    .where(inArray(streams.status, ['live']));
-  let updated = 0;
-  for (const s of live) {
-    const latest = await deps.snapshots.latest(`thumbs/${s.id}/`);
-    if (latest && latest.url !== s.thumbnailUrl) {
-      await deps.db.update(streams).set({ thumbnailUrl: latest.url }).where(eq(streams.id, s.id));
-      updated++;
-    }
-  }
-  return { live: live.length, updated };
 }
