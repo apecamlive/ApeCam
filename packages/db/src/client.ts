@@ -18,10 +18,22 @@ export function createDb(url: string, max = 10) {
   return { db: db as unknown as Db, pool };
 }
 
+/** Arbitrary constant: the Postgres advisory-lock key that serialises migrations. */
+const MIGRATION_LOCK_KEY = 4_663_000_001;
+
+/**
+ * Applies pending migrations. Safe to run from several processes at once (e.g. two web replicas starting
+ * together): the pool has a single connection, which holds a session advisory lock for the whole run.
+ */
 export async function migrateDb(url: string) {
   const { db, pool } = createDb(url, 1);
   try {
-    await migrateNodePg(db as never, { migrationsFolder: MIGRATIONS_FOLDER });
+    await pool.query('select pg_advisory_lock($1)', [MIGRATION_LOCK_KEY]);
+    try {
+      await migrateNodePg(db as never, { migrationsFolder: MIGRATIONS_FOLDER });
+    } finally {
+      await pool.query('select pg_advisory_unlock($1)', [MIGRATION_LOCK_KEY]);
+    }
   } finally {
     await pool.end();
   }
