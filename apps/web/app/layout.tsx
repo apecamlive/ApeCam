@@ -1,18 +1,13 @@
 import type { Metadata, Viewport } from 'next';
-import { Inter, Outfit, Space_Mono } from 'next/font/google';
+import { Geist, Geist_Mono } from 'next/font/google';
 import type { ReactNode } from 'react';
 import { AppShell } from '@/components/layout/app-shell';
 import { Providers } from '@/components/providers';
 import { siteOrigin } from '@/lib/site';
 import './globals.css';
 
-const outfit = Outfit({
-  subsets: ['latin'],
-  variable: '--font-outfit',
-  weight: ['400', '600', '700', '900'],
-});
-const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
-const spaceMono = Space_Mono({ subsets: ['latin'], variable: '--font-space-mono', weight: ['400', '700'] });
+const geist = Geist({ subsets: ['latin'], variable: '--font-geist' });
+const geistMono = Geist_Mono({ subsets: ['latin'], variable: '--font-geist-mono' });
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteOrigin()),
@@ -22,11 +17,11 @@ export const metadata: Metadata = {
   twitter: { card: 'summary_large_image' },
 };
 
-export const viewport: Viewport = { themeColor: '#050508' };
+export const viewport: Viewport = { themeColor: '#050505' };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <html lang="en" className={`${outfit.variable} ${inter.variable} ${spaceMono.variable}`}>
+    <html lang="en" className={`${geist.variable} ${geistMono.variable}`}>
       <body>
         <Providers>
           <AppShell>{children}</AppShell>

@@ -55,8 +55,27 @@ export function ConnectButton({ compact = false }: { compact?: boolean }) {
   }
   return (
     <>
-      <Button size="sm" variant="white" onClick={() => setOpen(true)}>
-        {compact ? 'Connect' : 'Connect Wallet'}
+      <Button
+        size="sm"
+        variant={compact ? 'dark' : 'white'}
+        className={compact ? 'h-9 px-3.5 text-sm' : undefined}
+        onClick={() => setOpen(true)}
+      >
+        <svg
+          viewBox="0 0 24 24"
+          className="h-4 w-4"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.8"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          aria-hidden="true"
+        >
+          <path d="M3 7a2 2 0 0 1 2-2h13v4M3 7v10a2 2 0 0 0 2 2h15V9H5a2 2 0 0 1-2-2zM16 14h.01" />
+        </svg>
+        <span>
+          Connect<span className={compact ? 'hidden lg:inline' : undefined}> wallet</span>
+        </span>
       </Button>
       <ConnectModal open={open} onClose={() => setOpen(false)} />
     </>

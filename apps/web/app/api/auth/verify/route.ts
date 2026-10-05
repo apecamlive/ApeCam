@@ -24,7 +24,7 @@ export const POST = route(
         until: user.bannedUntil.toISOString(),
       });
     }
-    const token = await createSessionToken(deps.keys, newSession(user));
+    const token = await createSessionToken(deps.keys, newSession(user), deps.now?.() ?? new Date());
     return Response.json(
       {
         user: { id: user.id, role: user.role, displayName: user.displayName },

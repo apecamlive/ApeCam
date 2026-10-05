@@ -5,9 +5,9 @@ const XSS_TITLE = '<img src=x onerror="window.__xss=1">xss check';
 test.describe('T-S4-E1 · viewer', () => {
   test('Home → token room → sign in → chat → report', async ({ page }) => {
     await page.goto('/');
-    await expect(page.getByText('gm apes, charts + chill')).toBeVisible();
+    await expect(page.getByTestId('feed').getByText('gm apes, charts + chill')).toBeVisible();
 
-    await page.getByText('gm apes, charts + chill').click();
+    await page.getByTestId('feed').getByText('gm apes, charts + chill').click();
     await expect(page).toHaveURL(new RegExp(`${SEED.apex}\\?s=`));
     await expect(page.getByRole('heading', { name: '$APEX' })).toBeVisible();
 
@@ -42,8 +42,8 @@ test.describe('T-S4-E1 · viewer', () => {
       void d.dismiss();
     });
     await page.goto('/');
-    await expect(page.getByText(XSS_TITLE)).toBeVisible();
-    await page.getByText(XSS_TITLE).click();
+    await expect(page.getByTestId('feed').getByText(XSS_TITLE)).toBeVisible();
+    await page.getByTestId('feed').getByText(XSS_TITLE).click();
     await expect(page.getByText(XSS_TITLE).first()).toBeVisible();
     expect(await page.evaluate(() => (window as unknown as { __xss?: number }).__xss)).toBeUndefined();
     expect(dialogs).toEqual([]);
@@ -70,7 +70,7 @@ test.describe('T-S4-E1 · viewer', () => {
 test.describe('mobile @mobile', () => {
   test('Home and token room fit a phone screen with bottom navigation', async ({ page }) => {
     await page.goto('/');
-    await expect(page.getByText('gm apes, charts + chill')).toBeVisible();
+    await expect(page.getByTestId('feed').getByText('gm apes, charts + chill')).toBeVisible();
     await expect(page.getByRole('navigation').last().getByText('Go Live')).toBeVisible();
     const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
     expect(overflow).toBeLessThanOrEqual(0);

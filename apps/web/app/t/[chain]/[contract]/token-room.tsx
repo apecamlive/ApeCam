@@ -161,20 +161,27 @@ function StreamStage({ stream }: { stream: TokenPage['streams'][number] }) {
         body: {},
       }),
     staleTime: 50 * 60_000,
+    // "Streaming not configured" will not fix itself in a few seconds: show it at once.
+    retry: (n, err) =>
+      n < 2 &&
+      !(err instanceof ApiRequestError && (err.status < 500 || err.code === 'STREAMING_UNAVAILABLE')),
   });
 
   return (
     <div className="grid gap-4 lg:grid-cols-[1fr_340px]">
       <div className="flex flex-col gap-3">
         {viewer.isError ? (
-          <ErrorState
-            message={
-              viewer.error instanceof ApiRequestError ? viewer.error.message : 'Could not join the stream.'
-            }
-            onRetry={() => viewer.refetch()}
-          />
+          <div className="relative flex aspect-video flex-col items-center justify-center gap-3 overflow-hidden rounded-[20px] border border-line text-center">
+            <span className="tag">Stream unavailable</span>
+            <p className="max-w-sm px-6 text-sm text-muted">
+              {viewer.error instanceof ApiRequestError ? viewer.error.message : 'Could not join the stream.'}
+            </p>
+            <Button size="sm" onClick={() => viewer.refetch()}>
+              Try again
+            </Button>
+          </div>
         ) : !viewer.data ? (
-          <Skeleton className="aspect-video" />
+          <Skeleton className="aspect-video rounded-[20px]" />
         ) : (
           <LiveKitRoom
             serverUrl={viewer.data.wsUrl}

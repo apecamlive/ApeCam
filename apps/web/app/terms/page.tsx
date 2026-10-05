@@ -8,7 +8,9 @@ export const metadata: Metadata = { title: 'Terms of Use' };
 export default function TermsPage() {
   return (
     <article className="mx-auto flex max-w-2xl flex-col gap-4 text-sm text-fg-soft">
-      <p className="tag">// draft — pending legal review</p>
+      <p className="w-fit rounded-full border border-warning/30 bg-warning/10 px-3 py-1 text-xs text-fg-soft">
+        Draft, pending legal review
+      </p>
       <h1 className="font-display text-3xl font-black text-fg">Terms of Use</h1>
       <Section title="1. Who can use APECAM">
         You must be at least 18 years old to stream. By going live you confirm you are 18 or older and allowed

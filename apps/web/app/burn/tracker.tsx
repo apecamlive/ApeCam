@@ -3,7 +3,7 @@
 import { formatCompact, formatUsd, shortAddress } from '@apecam/shared';
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
-import { CopyButton, EmptyState, ErrorState, Skeleton, Tabs } from '@/components/ui';
+import { CopyButton, ErrorState, Skeleton, Tabs } from '@/components/ui';
 import {
   api,
   ApiRequestError,
@@ -45,10 +45,27 @@ export function BurnTracker() {
     const notReady =
       summary.error instanceof ApiRequestError && summary.error.code === 'TRACKER_NOT_CONFIGURED';
     return notReady ? (
-      <EmptyState
-        title="Burn & Buyback Tracker"
-        body="The tracker goes live as soon as $APECAM is deployed and its wallets are published. Every number here will come straight from Robinhood Chain."
-      />
+      <section className="corner-marks rounded-panel border border-line bg-gradient-to-b from-white/[0.035] to-white/[0.01] px-6 py-14 md:px-12">
+        <p className="tag">Burn &amp; buyback tracker</p>
+        <h1 className="mt-4 font-display text-4xl font-semibold leading-[0.95] md:text-6xl">
+          Bought back.
+          <br />
+          <span className="text-fade">Burned. On-chain.</span>
+        </h1>
+        <p className="mt-6 max-w-lg text-[15px] leading-relaxed text-muted">
+          The tracker goes live as soon as $APECAM is deployed and its wallets are published. Every number
+          here will come straight from Robinhood Chain: 30% of the creator fee buys back $APECAM and sends it
+          to the burn address, 20% funds Stream to Earn.
+        </p>
+        <div className="mt-8 grid max-w-2xl gap-3 sm:grid-cols-3">
+          {['Bought back', 'Burned', 'Treasury'].map((label) => (
+            <div key={label} className="rounded-2xl border border-line bg-black/30 p-4">
+              <p className="tag">{label}</p>
+              <p className="mt-2 font-display text-2xl font-semibold text-subtle">—</p>
+            </div>
+          ))}
+        </div>
+      </section>
     ) : (
       <ErrorState message="Could not load the tracker." onRetry={() => summary.refetch()} />
     );

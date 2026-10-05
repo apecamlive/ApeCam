@@ -8,9 +8,9 @@ export { cx };
 
 type Variant = 'white' | 'dark' | 'primary' | 'danger' | 'ghost';
 const VARIANTS: Record<Variant, string> = {
-  white: 'bg-white text-black hover:bg-fg-soft',
-  dark: 'glass text-fg hover:bg-card-hover',
-  primary: 'bg-primary text-white hover:bg-primary-hover shadow-[0_0_30px_rgb(29_78_216/0.5)]',
+  white: 'bg-white text-black hover:bg-white/85',
+  dark: 'border border-line bg-white/[0.04] text-fg hover:border-line-strong hover:bg-white/[0.08]',
+  primary: 'bg-white text-black hover:bg-white/85',
   danger: 'bg-live-strong text-white hover:bg-live-strong-hover',
   ghost: 'text-muted hover:text-fg',
 };
@@ -25,7 +25,7 @@ export function Button({
   return (
     <button
       className={cx(
-        'inline-flex items-center justify-center gap-2 rounded-full font-semibold transition disabled:cursor-not-allowed disabled:opacity-50',
+        'inline-flex items-center justify-center gap-2 rounded-full font-medium transition disabled:cursor-not-allowed disabled:opacity-50',
         VARIANTS[variant],
         sizes[size],
         className,
@@ -47,7 +47,7 @@ export function LiveBadge({ className }: { className?: string }) {
   return (
     <span
       className={cx(
-        'inline-flex items-center gap-1.5 rounded-md bg-live-strong px-2 py-0.5 text-[11px] font-bold tracking-wider text-white',
+        'inline-flex items-center gap-1.5 rounded-full bg-live-strong px-2 py-0.5 text-[10px] font-semibold tracking-[0.12em] text-white',
         className,
       )}
     >
@@ -61,7 +61,7 @@ export function ViewerCount({ count, className }: { count: number; className?: s
   return (
     <span
       className={cx(
-        'inline-flex items-center gap-1 rounded-md bg-black/70 px-2 py-0.5 text-xs text-white',
+        'inline-flex items-center gap-1 rounded-full bg-black/60 px-2 py-0.5 text-xs text-white backdrop-blur',
         className,
       )}
       aria-label={`${count} viewers`}
@@ -208,7 +208,7 @@ export function Tabs<T extends string>({
   onChange: (id: T) => void;
 }) {
   return (
-    <div role="tablist" className="glass inline-flex rounded-full p-1">
+    <div role="tablist" className="inline-flex flex-wrap gap-1.5">
       {tabs.map((t) => (
         <button
           key={t.id}
@@ -216,8 +216,10 @@ export function Tabs<T extends string>({
           aria-selected={value === t.id}
           onClick={() => onChange(t.id)}
           className={cx(
-            'rounded-full px-4 py-1.5 text-sm font-semibold transition',
-            value === t.id ? 'bg-white text-black' : 'text-muted hover:text-fg',
+            'rounded-full border px-3.5 py-1.5 text-sm font-medium transition',
+            value === t.id
+              ? 'border-white bg-white text-black'
+              : 'border-line text-muted hover:border-line-strong hover:text-fg',
           )}
         >
           {t.label}
@@ -247,14 +249,14 @@ export function Modal({
   if (!open) return null;
   return (
     <div
-      className="fixed inset-0 z-50 flex items-end justify-center bg-black/70 p-4 sm:items-center"
+      className="fixed inset-0 z-50 flex items-end justify-center bg-black/75 p-4 backdrop-blur-sm sm:items-center"
       onClick={onClose}
     >
       <div
         role="dialog"
         aria-modal="true"
         aria-label={title}
-        className="glass w-full max-w-md rounded-panel p-6"
+        className="w-full max-w-md rounded-panel border border-line bg-card-solid p-6 shadow-2xl shadow-black/60"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="mb-4 flex items-center justify-between">

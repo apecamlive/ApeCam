@@ -62,6 +62,8 @@ export type GoLiveAccessInfo =
 export interface PublicConfig {
   goLiveAccess: GoLiveMode;
   feedbackUrl: string | null;
+  s2e: { tiers: [number, number][]; dailyCap: number; minViewers: number };
+  goLiveMinUsd: number;
 }
 
 export interface WalletTokensResponse {

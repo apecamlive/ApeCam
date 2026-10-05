@@ -62,24 +62,20 @@ export default async function AboutPage() {
   return (
     <article className="mx-auto flex max-w-3xl flex-col gap-10 py-4">
       <header className="flex flex-col gap-3">
-        <p className="tag">// about</p>
-        <h1 className="font-display text-4xl font-black leading-tight">
-          Your bag is your mic. <span className="text-primary-light">Hold it. Stream it.</span>
-        </h1>
+        <h1 className="font-display text-4xl font-semibold leading-tight">About APECAM</h1>
         <p className="text-fg-soft">
           Livestreaming on memecoin launchpads is scattered: some have it, most don’t. APECAM is one stage for
           every token, where the people holding a coin can go live and talk about it.
         </p>
       </header>
 
-      <section className="grid gap-3 sm:grid-cols-3">
+      <ul className="flex flex-col gap-3 text-fg-soft">
         {VALUES.map((v) => (
-          <div key={v.title} className="glass rounded-card p-5">
-            <h2 className="mb-1 font-display font-semibold">{v.title}</h2>
-            <p className="text-sm text-fg-soft">{v.body}</p>
-          </div>
+          <li key={v.title}>
+            <span className="font-semibold text-fg">{v.title}.</span> {v.body}
+          </li>
         ))}
-      </section>
+      </ul>
 
       <section className="flex flex-col gap-3">
         <h2 className="font-display text-2xl font-bold">How it works</h2>

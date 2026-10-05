@@ -48,12 +48,16 @@ export async function loadSessionKeys(env: Record<string, string | undefined>): 
   return { kid, privateKey, publicKey, publicJwk };
 }
 
-export async function createSessionToken(keys: SessionKeys, session: Session) {
+/**
+ * `now` is the app clock (deps.now): the ban cut-off in readSessionToken is written with the same clock, so
+ * "issued before the ban" is always compared on one timeline. Expiry stays relative to real time.
+ */
+export async function createSessionToken(keys: SessionKeys, session: Session, now: Date = new Date()) {
   return new SignJWT({ sid: session.sid, role: session.role })
     .setProtectedHeader({ alg: 'ES256', kid: keys.kid })
     .setSubject(session.userId)
     .setIssuer(ISSUER)
-    .setIssuedAt()
+    .setIssuedAt(Math.floor(now.getTime() / 1000))
     .setExpirationTime(`${SESSION_TTL_SEC}s`)
     .sign(keys.privateKey);
 }

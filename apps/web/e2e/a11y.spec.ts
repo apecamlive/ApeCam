@@ -29,7 +29,9 @@ test.describe('T-S4-E4 · accessibility', () => {
   for (const p of PAGES) {
     test(p.name, async ({ page }) => {
       await page.goto(p.path);
-      if (p.ready) await expect(page.getByText(p.ready).first()).toBeVisible();
+      // Home repeats titles in the hero and marquee; wait for the stream grid itself.
+      const scope = p.path === '/' ? page.getByTestId('feed') : page;
+      if (p.ready) await expect(scope.getByText(p.ready).first()).toBeVisible();
       await page.waitForLoadState('networkidle');
       expect(await audit(page)).toEqual([]);
     });

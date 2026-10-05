@@ -54,7 +54,7 @@ describe('Sprint 5 · Go Live access API', () => {
     });
     expect(res.status).toBe(200);
     expect(res.json).toMatchObject({ mode: 'closed', before: 'open' });
-    expect((await call(publicConfig, { method: 'GET' })).json).toEqual({
+    expect((await call(publicConfig, { method: 'GET' })).json).toMatchObject({
       goLiveAccess: 'closed',
       feedbackUrl: null,
     });

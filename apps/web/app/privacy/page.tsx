@@ -7,7 +7,9 @@ export const metadata: Metadata = { title: 'Privacy' };
 export default function PrivacyPage() {
   return (
     <article className="mx-auto flex max-w-2xl flex-col gap-4 text-sm text-fg-soft">
-      <p className="tag">// draft — pending legal review</p>
+      <p className="w-fit rounded-full border border-warning/30 bg-warning/10 px-3 py-1 text-xs text-fg-soft">
+        Draft, pending legal review
+      </p>
       <h1 className="font-display text-3xl font-black text-fg">Privacy</h1>
       <Section title="What we store">
         <ul className="list-disc space-y-1 pl-5">
