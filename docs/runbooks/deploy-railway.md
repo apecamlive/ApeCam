@@ -2,14 +2,28 @@
 
 ## Services
 
-One Railway project, four services:
+One Railway project with three services, plus the database on Supabase:
 
-| Service  | Source                | Notes                                                                               |
-| -------- | --------------------- | ----------------------------------------------------------------------------------- |
-| web      | `.railway/railway.ts` | **2 replicas**. Runs migrations in `preDeployCommand`, health check `/api/health`   |
-| worker   | `.railway/railway.ts` | One replica. BullMQ job schedulers are idempotent, so redeploys are safe            |
-| Postgres | Railway template      | Enable **volume backups** (daily) in the service settings; public TCP proxy **off** |
-| Redis    | Railway template      | Nonces, rate limits, caches, BullMQ, job health records. Turn on persistence (AOF)  |
+| Service  | Source                | Notes                                                                              |
+| -------- | --------------------- | ---------------------------------------------------------------------------------- |
+| web      | `.railway/railway.ts` | **2 replicas**. Runs migrations in `preDeployCommand`, health check `/api/health`  |
+| worker   | `.railway/railway.ts` | One replica. BullMQ job schedulers are idempotent, so redeploys are safe           |
+| Redis    | Railway template      | Nonces, rate limits, caches, BullMQ, job health records. Turn on persistence (AOF) |
+| Postgres | **Supabase**          | Session pooler URL, CA certificate, small pool (below). PITR / daily backups on    |
+
+### Supabase
+
+- `DATABASE_URL`: Supabase → Connect → **Session pooler** (host `aws-0-<region>.pooler.supabase.com`, port
+  **5432**, user `postgres.<project-ref>`). Not the transaction pooler (6543): migrations hold a session
+  advisory lock and would not be serialised there. The direct `db.<ref>.supabase.co` host is IPv6-only on most
+  plans; the pooler works over IPv4.
+- `DATABASE_CA_CERT`: Supabase → Database settings → SSL configuration → download the certificate and paste
+  its PEM text (one line with `\n` escapes is fine). With it, TLS is verified (`verify-full`). Without it, the
+  `pg` driver treats `sslmode=require` as `verify-full` and fails with "self-signed certificate in certificate
+  chain".
+- `DATABASE_POOL_MAX`: connections per process. Two web replicas + worker at the default 10 is 30, above the
+  pooler limit of small plans; start with `5` and raise it with the plan.
+- Choose the Supabase region closest to the Railway region (latency on every query).
 
 Web replicas share all state through Postgres + Redis (sessions are stateless JWTs), so any number works.
 Without Redis every replica would keep its own rate-limit counters and nonces: production must have
@@ -34,7 +48,8 @@ Once apply has succeeded, delete `apps/web/railway.json` and `apps/worker/railwa
 
 Copy `.env.example`. Required in production:
 
-- `DATABASE_URL=${{Postgres.DATABASE_URL}}`, `REDIS_URL=${{Redis.REDIS_URL}}` on **both** services.
+- `DATABASE_URL` (Supabase session pooler), `DATABASE_CA_CERT`, `DATABASE_POOL_MAX=5` and
+  `REDIS_URL=${{Redis.REDIS_URL}}` on **both** services.
 - `APP_ORIGIN=https://<your domain>` (web). Sign-in messages and CSRF checks use it; it must match exactly.
 - `SESSION_JWT_PRIVATE_KEY` + `SESSION_JWT_KID` (web): `pnpm --filter @apecam/web gen:session-key`.
 - `CF_ORIGIN_SECRET` (web): a long random string. Then in Cloudflare → Rules → Transform Rules → Modify
