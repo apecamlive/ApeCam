@@ -12,8 +12,32 @@ export type Db = PgDatabase<PgQueryResultHKT, Schema>;
 
 export const MIGRATIONS_FOLDER = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../migrations');
 
+/**
+ * Pool settings from the environment:
+ * - DATABASE_POOL_MAX caps connections per process (managed Postgres such as Supabase limits pooler clients).
+ * - DATABASE_CA_CERT (PEM; "\n" escapes allowed) verifies the server against that CA. Needed for Supabase,
+ *   whose certificates chain to Supabase's own root, which Node does not trust by default. Any sslmode in the
+ *   URL is dropped in that case so the explicit, verifying TLS config applies (pg lets URL params win).
+ */
+export function poolConfig(url: string, max: number, env: Record<string, string | undefined> = process.env) {
+  const fromEnv = Number(env.DATABASE_POOL_MAX);
+  const config: pg.PoolConfig = {
+    connectionString: url,
+    max: Number.isInteger(fromEnv) && fromEnv > 0 ? Math.min(fromEnv, max) : max,
+  };
+  const ca = env.DATABASE_CA_CERT?.trim();
+  if (ca) {
+    const u = new URL(url);
+    for (const p of ['sslmode', 'sslrootcert', 'sslcert', 'sslkey', 'uselibpqcompat'])
+      u.searchParams.delete(p);
+    config.connectionString = u.toString();
+    config.ssl = { ca: ca.replaceAll('\\n', '\n'), rejectUnauthorized: true };
+  }
+  return config;
+}
+
 export function createDb(url: string, max = 10) {
-  const pool = new pg.Pool({ connectionString: url, max });
+  const pool = new pg.Pool(poolConfig(url, max));
   const db = drizzleNodePg(pool, { schema });
   return { db: db as unknown as Db, pool };
 }

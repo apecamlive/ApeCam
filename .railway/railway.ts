@@ -1,5 +1,6 @@
 /**
  * APECAM on Railway, as code (replaces the deprecated apps/web/railway.json + apps/worker/railway.json).
+ * The database is Supabase (managed outside Railway); Redis runs on Railway.
  *
  *   railway login && railway link            # pick the APECAM project + environment
  *   railway config plan                       # review: nothing you want to keep may show as "delete"
@@ -11,13 +12,17 @@
  * Secrets are never written here: `preserve()` keeps whatever value is set in the Railway dashboard.
  * Anything not declared in this file can be removed by `apply`, so keep every service you want listed here.
  */
-import { defineRailway, github, postgres, preserve, redis, service } from 'railway/iac';
+import { defineRailway, github, preserve, redis, service } from 'railway/iac';
 
 const REPO = 'apecamlive/ApeCam';
 const BRANCH = 'main';
 
 /** Variables both app services read (see .env.example); values live in the dashboard. */
 const sharedSecrets = {
+  // Supabase Postgres: session-pooler URL (port 5432), its CA certificate, and a small pool per process.
+  DATABASE_URL: preserve(),
+  DATABASE_CA_CERT: preserve(),
+  DATABASE_POOL_MAX: preserve(),
   // Chains (ADR 001, 005)
   SOLANA_RPC_URL: preserve(),
   SOLANA_RPC_FALLBACK: preserve(),
@@ -55,8 +60,7 @@ const sharedSecrets = {
 const watch = (app: string) => [`apps/${app}/**`, 'packages/**', 'pnpm-lock.yaml', 'package.json'];
 
 export default defineRailway((_ctx, project) => {
-  // Names match Railway's defaults so an existing Postgres/Redis is kept, not recreated.
-  const db = postgres('Postgres');
+  // Name matches Railway's default so an existing Redis is kept, not recreated.
   const cache = redis('Redis');
 
   const web = service('@apecam/web', {
@@ -67,7 +71,6 @@ export default defineRailway((_ctx, project) => {
     healthcheck: '/api/health',
     healthcheckTimeout: 60,
     env: {
-      DATABASE_URL: db.env.DATABASE_URL,
       REDIS_URL: cache.env.REDIS_URL,
       APP_ORIGIN: preserve(),
       SESSION_JWT_PRIVATE_KEY: preserve(),
@@ -86,7 +89,6 @@ export default defineRailway((_ctx, project) => {
     healthcheck: '/health',
     healthcheckTimeout: 60,
     env: {
-      DATABASE_URL: db.env.DATABASE_URL,
       REDIS_URL: cache.env.REDIS_URL,
       R2_BACKUP_BUCKET: preserve(),
       ...sharedSecrets,
@@ -94,5 +96,5 @@ export default defineRailway((_ctx, project) => {
   });
 
   // @apecam/spikes is deliberately absent: it is not a deployable app, and apply will remove that service.
-  return project('apecam', { resources: [web, worker, db, cache] });
+  return project('apecam', { resources: [web, worker, cache] });
 });
