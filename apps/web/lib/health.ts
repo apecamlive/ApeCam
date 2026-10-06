@@ -1,3 +1,4 @@
+import { poolConfig } from '@apecam/db';
 import { runHealthChecks, type HealthCheck } from '@apecam/shared';
 import { Redis } from 'ioredis';
 import pg from 'pg';
@@ -7,7 +8,8 @@ let pool: pg.Pool | undefined;
 let redis: Redis | undefined;
 
 function getPool(url: string) {
-  pool ??= new pg.Pool({ connectionString: url, max: 5 });
+  // Same TLS / pool settings as the app (DATABASE_CA_CERT, DATABASE_POOL_MAX), but at most 2 connections.
+  pool ??= new pg.Pool(poolConfig(url, 2));
   return pool;
 }
 

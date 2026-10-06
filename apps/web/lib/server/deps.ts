@@ -3,6 +3,7 @@ import { consoleLogger } from '@apecam/core';
 import { MemoryKeyValueStore, RedisKeyValueStore, type KeyValueStore } from '@apecam/shared';
 import { Redis } from 'ioredis';
 import type { AuthConfig } from './auth';
+import { normalizeOrigin } from '@/lib/site';
 import { loadSessionKeys, type SessionKeys } from './session';
 
 export interface WebDeps extends CoreDeps {
@@ -19,7 +20,7 @@ export async function buildDeps(env: Record<string, string | undefined>): Promis
   if (!env.REDIS_URL)
     consoleLogger.warn({}, 'REDIS_URL not set: using in-memory store (single process only)');
 
-  const origin = env.APP_ORIGIN ?? 'http://localhost:3000';
+  const origin = normalizeOrigin(env.APP_ORIGIN);
   return {
     ...coreDepsFromEnv(env, kv),
     kv,
