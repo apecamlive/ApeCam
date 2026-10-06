@@ -46,3 +46,17 @@ describe('no secrets in the browser bundle', () => {
     expect(publicVars.join()).not.toMatch(/SECRET|PRIVATE|KEY$|TOKEN|PASSWORD/);
   });
 });
+
+describe('APP_ORIGIN normalisation', () => {
+  it('matches the browser Origin header whatever was pasted', async () => {
+    const { normalizeOrigin } = await import('./site');
+    expect(normalizeOrigin('https://apecamweb-production.up.railway.app/')).toBe(
+      'https://apecamweb-production.up.railway.app',
+    );
+    expect(normalizeOrigin(' "https://apecam.xyz/path?x=1" ')).toBe('https://apecam.xyz');
+    expect(normalizeOrigin('apecam.xyz')).toBe('https://apecam.xyz');
+    expect(normalizeOrigin('http://localhost:3000')).toBe('http://localhost:3000');
+    expect(normalizeOrigin(undefined)).toBe('http://localhost:3000');
+    expect(normalizeOrigin('')).toBe('http://localhost:3000');
+  });
+});

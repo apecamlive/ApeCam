@@ -1,5 +1,6 @@
 import type { NextConfig } from 'next';
 import { securityHeaders } from './lib/security';
+import { normalizeOrigin } from './lib/site';
 
 const nextConfig: NextConfig = {
   // Workspace packages ship TypeScript source.
@@ -25,7 +26,7 @@ const nextConfig: NextConfig = {
     // Evaluated at build time: APP_ORIGIN must be set for the build (Railway exposes service variables to it).
     const headers = securityHeaders({
       dev: process.env.NODE_ENV !== 'production',
-      https: (process.env.APP_ORIGIN ?? '').startsWith('https://'),
+      https: normalizeOrigin(process.env.APP_ORIGIN).startsWith('https://'),
     });
     return [{ source: '/:path*', headers }];
   },
