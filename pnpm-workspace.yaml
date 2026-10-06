@@ -35,6 +35,8 @@ minimumReleaseAgeExclude:
 overrides:
   # GHSA memory-exhaustion DoS in ws < 8.21 (via viem/wagmi). Same major, drop-in (S4-7 audit).
   'ws@>=8.0.0 <8.21.0': ^8.21.0
+  # GHSA-68fv-2mgg-jv7q event-loop DoS in source-map-js < 1.2.2 (via Tailwind/PostCSS and Next). Same major.
+  'source-map-js@>=1.0.0 <1.2.2': ^1.2.2
 auditConfig:
   ignoreGhsas:
     # braces <= 3.0.3 stack-exhaustion DoS. No fixed release exists (3.0.3 is the latest on npm). Only reached via
